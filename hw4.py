@@ -273,7 +273,84 @@ MAP_val = max(posterior)
 MAP_idx = posterior.index(MAP_val)
 print("best label estimate is " + langs[MAP_idx] + " with probability " + str(MAP_val))
 
+# Question 3
 
+def sigma(x):
+    y = 1 / (1 + np.exp(x))
+    return(y)
+
+def softmax(x):
+    y = np.exp(x) / (np.sum(np.exp(x)))
+    return(y)
+
+def dLdg(y, g):
+    z = -y/g
+    return(z)
+
+def dgdsx(g):
+    k = len(g)
+    d = np.array()
+    for i in range(k):
+        for j in range(k):
+            d[i][j] = g[i] * ((i == j) - g[j])
+    return(d)
+
+def propforward(W1, W2, W3, x):
+    a1 = sigma(np.matmul(W1, x))
+    a2 = sigma(np.matmul(W2, a1))
+    yhat = softmax(np.matmul(W3, a2))
+    out = np.array([a1, a2, yhat])
+    return(out)
+
+def propback(W1, W2, W3, x, a1, a2, yhat, y, alpha):
+    k = len(y)
+    d2 = W3.shape[1]
+    d1 = W2.shape[1]
+    d = W1.shape[1]
+    gW3 = np.array()
+    for p in range(k):
+        for q in range(d2):
+            si = 0
+            for i in range(k):
+                sj = 0
+                for j in range(k):
+                    sj += yhat[i]*((i==j) - yhat[j]) * (p==h) * a2[q]
+                si += -(y[i]/yhat[i]) * sj
+            gW3[p][q] = si
+    gW2 = np.array()
+    for p in range(d2):
+        for q in range(d1):
+            si = 0
+            for i in range(k):
+                sj = 0
+                for j in range(k):
+                    sl = 0
+                    for l in range(d2):
+                        sl += W3[j][l] * sigma(np.matmul(W2,a1)) * (1 - sigma(np.matmul(W2,a1))) * (p==l) * a1[q]
+                    sj += yhat[i]*((i==j) - yhat[j]) * sl
+                si += -(y[i]/yhat[i]) * sj
+            gW2[p][q] = si
+    gW1 = np.array()
+    for p in range(d1):
+        for q in range(d):
+            si = 0
+            for i in range(k):
+                sj = 0
+                for j in range(k):
+                    sl = 0
+                    for l in range(d2):
+                        sr = 0 
+                        for r in range(d1):
+                            sr += W1[l][r] * sigma(np.matmul(W1,x)) * (1 - sigma(np.matmul(W1,x))) * (p==r) * x[q]
+                        sl += W3[j][l] * sigma(np.matmul(W2,a1)) * (1 - sigma(np.matmul(W2,a1))) * sr
+                    sj += yhat[i]*((i==j) - yhat[j]) * sl
+                si += -(y[i]/yhat[i]) * sj
+            gW1[p][q] = si
+    W1 = W1 - alpha * gW1
+    W2 = W2 - alpha * gW2
+    W3 = W3 - alpha * gW3
+    out = np.array([W1, W2, W3])
+    return(out)
 
 
 
